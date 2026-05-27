@@ -20,17 +20,19 @@ impl Application {
             config.database.connect_option()
         );
 
-        let state = web::Data::new(AppState { db_pool });
-
         let address = format!(
             "{}:{}",
             config.application.host,
             config.application.port
         );
 
-        let listener = TcpListener::bind(address)?;
+        let listener = TcpListener::bind(address)
+            .context("Failed to bind TCP listener")?;
+
         let port = listener.local_addr().unwrap().port();
-        let server = run(listener, state)?;
+        let state = web::Data::new(AppState { db_pool });
+        let server = run(listener, state)
+            .context("Failed to start HTTP server")?;
 
         Ok(Self { port, server })
     }
