@@ -16,34 +16,39 @@
 - [x] API contract defined
 - [x] Cargo.toml dependencies defined
 - [x] Project structure designed
-- [x] Configuration pattern (zero2prod style, base/local/production yaml)
+- [x] Configuration pattern (zero2prod style, base/production yaml)
 - [x] Telemetry wired (tracing + bunyan + tracing-actix-web)
 - [x] Application struct pattern (build + run_until_stopped)
-- [ ] Health route confirmed working (cargo run → GET /health → 200)
+- [x] Health route confirmed working (curl → 200)
+- [x] Error handling in startup.rs (anyhow + context)
 - [ ] SQLx migrations setup
 - [ ] DB pool confirmed connected
 - [ ] POST /shorten implemented
 - [ ] GET /{short_code} implemented
-- [ ] Error handling + structured errors
+- [ ] Structured errors in db layer (thiserror)
 - [ ] Integration tests
 - [ ] Deployment
 
+## Error Handling Convention
+- application code (startup, handlers): anyhow::Error + .context()
+- db/library code: thiserror custom enum so callers can match variants
+- Rule: anyhow = care about message, thiserror = care about type
+
 ## Project Structure
 src/
-├── main.rs          # entry point only — thin
-├── lib.rs           # pub mod declarations
-├── startup.rs       # Application struct, build(), run()
-├── configuration.rs # Settings structs, get_configuration()
-├── telemetry.rs     # get_subscriber(), init_subscriber()
+├── main.rs
+├── lib.rs
+├── startup.rs       # Application struct — now returns anyhow::Error
+├── configuration.rs
+├── telemetry.rs
 ├── routes/
 │   ├── mod.rs
-│   └── health.rs    # GET /health → 200
+│   └── health.rs
 └── (coming) db/, models.rs
 
 configuration/
-├── base.yaml        # all base settings
-├── local.yaml       # local overrides (to simplify/remove)
-└── production.yaml  # production overrides (env vars, no ${ })
+├── base.yaml
+└── production.yaml
 
 ## Key Decisions Made
 - Short code: random Base62, 7 chars, retry up to 3x on collision → 500
@@ -58,23 +63,19 @@ configuration/
 - PgPool::connect_lazy_with() — lazy connection, fast startup
 - Secret<String> for DB password — secrecy crate
 - PgConnectOptions over raw connection string
-
-## Known Issues to Fix
-- Environment::as_str() returns capitalized strings → breaks yaml filenames
-- production.yaml uses ${} syntax which config crate doesn't interpolate
-- local.yaml is redundant with base.yaml — simplify
+- startup.rs uses anyhow, db layer will use thiserror
 
 ## Configuration Pattern
-- Uses `config` crate
-- base.yaml → all shared/default settings
-- production.yaml → production overrides
-- APP_ENVIRONMENT env var selects environment (default: local)
-- APP__ prefix for env var overrides (e.g. APP__DATABASE__PASSWORD)
+- base.yaml → all default settings
+- production.yaml → production overrides (no ${} syntax, use env vars)
+- APP_ENVIRONMENT selects environment (default: local)
+- APP__DATABASE__PASSWORD etc for env var overrides
 
 ## Commands
-(fill in once health check confirmed working)
+- cargo run — start server
+- curl http://127.0.0.1:8080/health — confirm 200
 
 ## Conventions
-- Errors: thiserror for library errors, anyhow for application errors
 - All SQL lives in db/urls.rs
 - Routes are thin — logic lives in db layer
+- .context() on every ? in application code
