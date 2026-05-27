@@ -68,3 +68,61 @@ Using 302 (temporary redirect). A 301 tells browsers and CDNs to cache the redir
 
 4. Rate limiting: not in MVP scope but the system should be designed so it can 
    be added at the middleware layer without touching business logic.
+
+## API Contract
+
+All responses return JSON. Errors follow a consistent shape:
+{ "error": "<machine-readable code>", "message": "<human-readable description>" }
+
+---
+
+### POST /shorten
+
+Creates a new short URL mapping.
+
+**Request body:**
+{
+  "long_url": String,             // required, must be a valid URL
+  "alias": Optional<String>       // optional, custom slug (a-z, 0-9, hyphen only)
+}
+
+**Success — 201 Created:**
+{
+  "short_code": String,   // e.g. "abc1234"
+  "short_url":  String,   // e.g. "https://tiny.url/abc1234"
+  "long_url":   String,   // echo back what was stored
+  "expires_at": String    // ISO 8601 timestamp, or null if no expiry
+}
+
+**Errors:**
+400 Bad Request — long_url is missing or not a valid URL
+{ "error": "invalid_url", "message": "long_url must be a valid URL" }
+
+400 Bad Request — alias contains invalid characters
+{ "error": "invalid_alias", "message": "alias may only contain a-z, 0-9, and hyphens" }
+
+409 Conflict — requested alias is already taken
+{ "error": "alias_conflict", "message": "that alias is already in use" }
+
+500 Internal Server Error — could not generate unique code after retries
+{ "error": "generation_failed", "message": "failed to generate a unique short code, try again" }
+
+---
+
+### GET /{short_code}
+
+Resolves a short code and redirects to the original URL.
+
+**Path parameter:**
+short_code: String   // the 7-char code or custom alias
+
+**Success — 302 Found:**
+Header: Location: <long_url>
+Body: empty
+
+**Errors:**
+404 Not Found — short_code does not exist
+{ "error": "not_found", "message": "no URL found for that code" }
+
+410 Gone — short_code existed but has expired
+{ "error": "expired", "message": "this short URL has expired" }
