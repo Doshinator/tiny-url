@@ -1,0 +1,7 @@
+# configuration/local.yaml
+application:
+  port: 8080
+
+database:
+  username: "postgres"
+  password: "password"
