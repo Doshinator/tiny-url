@@ -38,3 +38,6 @@ anyhow = "1"
 
 # env loading
 dotenvy = "0.15"
+
+# url
+url = "2"
