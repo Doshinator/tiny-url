@@ -1,11 +1,28 @@
+use chrono::Utc;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::models::Url;
 
 pub async fn insert_url(
-    db_pool: &PgPool
-) -> Result<Url, DbError> {
-    // sqlx query::(Url, etc, etc)
-    // .execute(state.db_pool)
-    // .await 
+    pool: &PgPool,
+    short_code: &str,
+    long_url: &str,
+) -> Result<Url, sqlx::Error> {
+    let rec = sqlx::query_as!(
+        Url,
+        r#"
+        INSERT INTO urls (id, short_code, long_url, created_at)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+        "#,
+        Uuid::new_v4(),
+        short_code,
+        long_url,
+        Utc::now()
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(rec)
 }

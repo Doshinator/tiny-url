@@ -16,35 +16,36 @@
 - [x] API contract defined
 - [x] Cargo.toml dependencies defined
 - [x] Project structure designed
-- [x] Configuration pattern (zero2prod style, base/production yaml)
-- [x] Telemetry wired (tracing + bunyan + tracing-actix-web)
-- [x] Application struct pattern (build + run_until_stopped)
-- [x] Health route confirmed working (curl → 200)
-- [x] Error handling in startup.rs (anyhow + context)
-- [ ] SQLx migrations setup
-- [ ] DB pool confirmed connected
-- [ ] POST /shorten implemented
+- [x] Configuration pattern (zero2prod style)
+- [x] Telemetry wired
+- [x] Application struct pattern
+- [x] Health route confirmed working
+- [x] Error handling convention established
+- [x] SQLx migrations — urls table created
+- [x] DB connection verified at startup
+- [~] POST /shorten — in progress
 - [ ] GET /{short_code} implemented
-- [ ] Structured errors in db layer (thiserror)
+- [ ] Structured errors in db layer
 - [ ] Integration tests
 - [ ] Deployment
-
-## Error Handling Convention
-- application code (startup, handlers): anyhow::Error + .context()
-- db/library code: thiserror custom enum so callers can match variants
-- Rule: anyhow = care about message, thiserror = care about type
 
 ## Project Structure
 src/
 ├── main.rs
 ├── lib.rs
-├── startup.rs       # Application struct — now returns anyhow::Error
+├── startup.rs
 ├── configuration.rs
 ├── telemetry.rs
+├── models.rs          # Url, CreateUrlRequest, UrlResponse
+├── utils.rs           # validate_url(), generate_short_code()
 ├── routes/
 │   ├── mod.rs
-│   └── health.rs
-└── (coming) db/, models.rs
+│   ├── health.rs
+│   ├── shorten.rs     # POST /shorten
+│   └── redirect.rs    # GET /{short_code} (coming)
+└── db/
+    ├── mod.rs
+    └── urls.rs        # insert_url(), get_url_by_code() (coming)
 
 configuration/
 ├── base.yaml
@@ -52,30 +53,33 @@ configuration/
 
 ## Key Decisions Made
 - Short code: random Base62, 7 chars, retry up to 3x on collision → 500
-- Redirect: 302 (not 301) — preserves server control
-- Auth: deferred to v2, MVP is anonymous
+- Redirect: 302 (not 301)
+- Auth: deferred to v2
 - Custom slugs: in scope for MVP, first-writer-wins → 409
+- is_custom column: deferred to v2
+- Duplicate long_urls: allowed, two rows created
 - Primary key: UUID v4
-- Index on short_code — high frequency lookup column
+- Index on short_code
 - API: POST /shorten → 201, GET /{short_code} → 302
 - Error shape: { error: string, message: string }
-- 404 vs 410 for missing vs expired links
-- PgPool::connect_lazy_with() — lazy connection, fast startup
-- Secret<String> for DB password — secrecy crate
-- PgConnectOptions over raw connection string
-- startup.rs uses anyhow, db layer will use thiserror
+- 404 vs 410 for missing vs expired
+- PgPool::connect_lazy_with() + eager acquire() check at startup
+- db layer has no actix dependency — takes &PgPool directly
+- RETURNING * on insert — one round trip
 
-## Configuration Pattern
-- base.yaml → all default settings
-- production.yaml → production overrides (no ${} syntax, use env vars)
-- APP_ENVIRONMENT selects environment (default: local)
-- APP__DATABASE__PASSWORD etc for env var overrides
+## Error Handling
+- application code: anyhow::Error + .context()
+- db layer: sqlx::Error for now, thiserror custom enum later
+- Rule: anyhow = care about message, thiserror = care about type
 
 ## Commands
 - cargo run — start server
 - curl http://127.0.0.1:8080/health — confirm 200
+- sqlx migrate run — run pending migrations
+- cargo sqlx prepare — regenerate .sqlx offline cache
 
 ## Conventions
 - All SQL lives in db/urls.rs
 - Routes are thin — logic lives in db layer
-- .context() on every ? in application code
+- db layer takes &PgPool, never web::Data<AppState>
+- validate_url() and generate_short_code() live in utils.rs
