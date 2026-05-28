@@ -30,7 +30,7 @@ tracing-log = "0.2"
 secrecy = { version = "0.8", features = ["serde"] }
 
 # Utils
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 rand = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1"
