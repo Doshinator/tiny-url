@@ -24,5 +24,5 @@ pub struct UrlResponse {
     pub short_code: String,
     pub short_url: String,
     pub long_url: String,
-    pub expires_at: Option<DateTime<Utc>>,
+    pub expires_at: Option<String>,
 }

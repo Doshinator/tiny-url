@@ -26,3 +26,19 @@ pub async fn insert_url(
 
     Ok(rec)
 }
+
+pub async fn short_code_exists(
+    pool: &PgPool,
+    short_code: &str
+) -> Result<bool, sqlx::Error> {
+    let rec = sqlx::query!(
+        r#"
+        SELECT EXISTS(SELECT 1 FROM urls WHERE short_code = $1) as "exists!"
+        "#,
+        short_code
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(rec.exists)
+}
