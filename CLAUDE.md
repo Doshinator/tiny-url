@@ -24,8 +24,8 @@
 - [x] SQLx migrations — urls table created
 - [x] DB connection verified at startup
 - [x] POST /shorten implemented and tested
-- [x] GET /{short_code} implemented
-- [ ] GET /{short_code} curl tested end to end
+- [x] GET /{short_code} implemented and tested end to end
+- [~] Custom ApiError type — in progress
 - [ ] Integration tests
 - [ ] Deployment
 
@@ -38,6 +38,7 @@ src/
 ├── telemetry.rs
 ├── models.rs
 ├── utils.rs
+├── errors.rs          # ApiError, ResponseError impl
 ├── routes/
 │   ├── mod.rs
 │   ├── health.rs
@@ -68,11 +69,14 @@ configuration/
 - Alias validation: alphanumeric + hyphens only
 - Retry loop: 3 attempts for auto-generated codes
 - Expiry check: if let Some(expires_at) pattern
+- ApiError: typed error with ResponseError impl, status skipped in JSON
 
 ## Error Handling
 - application code: anyhow::Error + .context()
 - db layer: sqlx::Error bubbled up, matched in handler
+- HTTP errors: ApiError with convenience constructors
 - Unique constraint name: urls_short_code_key
+- Handler return type: Result<HttpResponse, ApiError>
 
 ## Commands
 - cargo run — start server
@@ -89,6 +93,6 @@ configuration/
 - Routes are thin — logic lives in db layer
 - db layer takes &PgPool, never web::Data<AppState>
 - validate_url() and generate_short_code() in utils.rs
-- Error responses: { error: string, message: string }
+- Error responses: ApiError — never raw serde_json::json! for errors
 - Always .await async calls
-- Error messages describe the specific operation that failed
+- Handler return type: Result<HttpResponse, ApiError>
