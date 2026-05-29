@@ -59,6 +59,7 @@ pub async fn shorten(
         },
     };
 
+    // 3. persist
     match insert_url(&state.db_pool, &short_code, &body.long_url).await {
         Ok(url) => {
             let response = UrlResponse {

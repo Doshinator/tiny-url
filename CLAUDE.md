@@ -23,9 +23,9 @@
 - [x] Error handling convention established
 - [x] SQLx migrations — urls table created
 - [x] DB connection verified at startup
-- [x] POST /shorten implemented
-- [ ] POST /shorten curl tested end to end
-- [ ] GET /{short_code} implemented
+- [x] POST /shorten implemented and tested
+- [x] GET /{short_code} implemented
+- [ ] GET /{short_code} curl tested end to end
 - [ ] Integration tests
 - [ ] Deployment
 
@@ -36,16 +36,16 @@ src/
 ├── startup.rs
 ├── configuration.rs
 ├── telemetry.rs
-├── models.rs          # Url, CreateUrlRequest, UrlResponse
-├── utils.rs           # validate_url(), generate_short_code()
+├── models.rs
+├── utils.rs
 ├── routes/
 │   ├── mod.rs
 │   ├── health.rs
-│   ├── shorten.rs     # POST /shorten
-│   └── redirect.rs    # GET /{short_code} (coming)
+│   ├── shorten.rs
+│   └── redirect.rs
 └── db/
     ├── mod.rs
-    └── urls.rs        # insert_url(), short_code_exists()
+    └── urls.rs
 
 configuration/
 ├── base.yaml
@@ -67,6 +67,7 @@ configuration/
 - RETURNING * on insert — one round trip
 - Alias validation: alphanumeric + hyphens only
 - Retry loop: 3 attempts for auto-generated codes
+- Expiry check: if let Some(expires_at) pattern
 
 ## Error Handling
 - application code: anyhow::Error + .context()
@@ -81,6 +82,7 @@ configuration/
 - curl -X POST http://127.0.0.1:8080/shorten \
     -H "Content-Type: application/json" \
     -d '{"long_url": "https://www.google.com"}'
+- curl -v http://127.0.0.1:8080/{short_code}
 
 ## Conventions
 - All SQL lives in db/urls.rs
@@ -89,3 +91,4 @@ configuration/
 - validate_url() and generate_short_code() in utils.rs
 - Error responses: { error: string, message: string }
 - Always .await async calls
+- Error messages describe the specific operation that failed

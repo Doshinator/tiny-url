@@ -42,3 +42,20 @@ pub async fn short_code_exists(
 
     Ok(rec.exists)
 }
+
+pub async fn get_url_by_code(
+    pool: &PgPool,
+    short_code: &str
+) -> Result<Option<Url>, sqlx::Error> {
+    let rec = sqlx::query_as!(
+        Url,
+        r#"
+        SELECT * FROM urls WHERE short_code = $1
+        "#,
+        short_code
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(rec)
+}
