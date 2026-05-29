@@ -24,8 +24,8 @@
 - [x] SQLx migrations — urls table created
 - [x] DB connection verified at startup
 - [x] POST /shorten implemented and tested
-- [x] GET /{short_code} implemented and tested end to end
-- [~] Custom ApiError type — in progress
+- [x] GET /{short_code} implemented and tested
+- [x] Custom ApiError type with ResponseError impl
 - [ ] Integration tests
 - [ ] Deployment
 
@@ -38,7 +38,7 @@ src/
 ├── telemetry.rs
 ├── models.rs
 ├── utils.rs
-├── errors.rs          # ApiError, ResponseError impl
+├── errors.rs
 ├── routes/
 │   ├── mod.rs
 │   ├── health.rs
@@ -70,6 +70,7 @@ configuration/
 - Retry loop: 3 attempts for auto-generated codes
 - Expiry check: if let Some(expires_at) pattern
 - ApiError: typed error with ResponseError impl, status skipped in JSON
+- Handler return type: Result<HttpResponse, ApiError>
 
 ## Error Handling
 - application code: anyhow::Error + .context()
