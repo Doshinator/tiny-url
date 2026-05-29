@@ -11,21 +11,21 @@
 ## Project Status
 - [x] Problem statement defined
 - [x] Design doc written
-- [x] Architecture defined (creation + resolution flows)
+- [x] Architecture defined
 - [x] Key design decisions made
 - [x] API contract defined
 - [x] Cargo.toml dependencies defined
 - [x] Project structure designed
-- [x] Configuration pattern (zero2prod style)
+- [x] Configuration pattern
 - [x] Telemetry wired
 - [x] Application struct pattern
 - [x] Health route confirmed working
 - [x] Error handling convention established
 - [x] SQLx migrations — urls table created
 - [x] DB connection verified at startup
-- [~] POST /shorten — in progress
+- [x] POST /shorten implemented
+- [ ] POST /shorten curl tested end to end
 - [ ] GET /{short_code} implemented
-- [ ] Structured errors in db layer
 - [ ] Integration tests
 - [ ] Deployment
 
@@ -45,7 +45,7 @@ src/
 │   └── redirect.rs    # GET /{short_code} (coming)
 └── db/
     ├── mod.rs
-    └── urls.rs        # insert_url(), get_url_by_code() (coming)
+    └── urls.rs        # insert_url(), short_code_exists()
 
 configuration/
 ├── base.yaml
@@ -55,31 +55,37 @@ configuration/
 - Short code: random Base62, 7 chars, retry up to 3x on collision → 500
 - Redirect: 302 (not 301)
 - Auth: deferred to v2
-- Custom slugs: in scope for MVP, first-writer-wins → 409
+- Custom slugs: MVP, first-writer-wins → 409
 - is_custom column: deferred to v2
-- Duplicate long_urls: allowed, two rows created
+- Duplicate long_urls: allowed
 - Primary key: UUID v4
 - Index on short_code
 - API: POST /shorten → 201, GET /{short_code} → 302
 - Error shape: { error: string, message: string }
 - 404 vs 410 for missing vs expired
-- PgPool::connect_lazy_with() + eager acquire() check at startup
-- db layer has no actix dependency — takes &PgPool directly
+- db layer takes &PgPool, never web::Data<AppState>
 - RETURNING * on insert — one round trip
+- Alias validation: alphanumeric + hyphens only
+- Retry loop: 3 attempts for auto-generated codes
 
 ## Error Handling
 - application code: anyhow::Error + .context()
-- db layer: sqlx::Error for now, thiserror custom enum later
-- Rule: anyhow = care about message, thiserror = care about type
+- db layer: sqlx::Error bubbled up, matched in handler
+- Unique constraint name: urls_short_code_key
 
 ## Commands
 - cargo run — start server
-- curl http://127.0.0.1:8080/health — confirm 200
+- cargo check — verify compilation
 - sqlx migrate run — run pending migrations
 - cargo sqlx prepare — regenerate .sqlx offline cache
+- curl -X POST http://127.0.0.1:8080/shorten \
+    -H "Content-Type: application/json" \
+    -d '{"long_url": "https://www.google.com"}'
 
 ## Conventions
 - All SQL lives in db/urls.rs
 - Routes are thin — logic lives in db layer
 - db layer takes &PgPool, never web::Data<AppState>
-- validate_url() and generate_short_code() live in utils.rs
+- validate_url() and generate_short_code() in utils.rs
+- Error responses: { error: string, message: string }
+- Always .await async calls
