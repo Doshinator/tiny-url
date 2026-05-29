@@ -2,7 +2,7 @@ use std::net::TcpListener;
 use actix_web::{App, HttpServer, dev::Server, web};
 use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
-use crate::{configuration::Settings, routes::{health::health, shorten::shorten}};
+use crate::{configuration::Settings, routes::{health::health, redirect::redirect, shorten::shorten}};
 use anyhow::Context;
 
 pub struct AppState {
@@ -55,6 +55,7 @@ fn run(
             .wrap(TracingLogger::default())
             .service(health)
             .service(shorten)
+            .service(redirect)
             .app_data(state.clone())
 
     })
