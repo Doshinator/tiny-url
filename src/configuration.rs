@@ -45,6 +45,19 @@ impl DatabaseSettings {
             .database(&self.database_name)
             .ssl_mode(ssl_mode)
     }
+
+    pub fn connect_option_without_db(&self) -> PgConnectOptions {
+        PgConnectOptions::new()
+            .host(&self.host)
+            .port(self.port)
+            .username(&self.username)
+            .password(self.password.expose_secret())
+            .ssl_mode(if self.require_ssl {
+                PgSslMode::Require
+            } else {
+                PgSslMode::Prefer
+            })
+    }
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
