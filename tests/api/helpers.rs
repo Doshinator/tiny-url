@@ -24,7 +24,7 @@ pub async fn spawn_app() -> TestApp {
         init_subscriber(subscriber);
     });
 
-    let config = get_configuration()
+    let mut config = get_configuration()
         .expect("Failed to read configuration");
 
     // config setup for test
