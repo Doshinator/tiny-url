@@ -19,6 +19,6 @@ async fn shorten_returns_201_for_valid_url() {
     assert_eq!(response.status().as_u16(), 201);
 
     let body: serde_json::Value = response.json().await.unwrap();
-    assert!(body["short-code"].as_str().is_some());
+    assert!(body["short_code"].as_str().is_some());
     assert!(body["short_url"].as_str().is_some());
 }
