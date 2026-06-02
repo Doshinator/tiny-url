@@ -26,8 +26,9 @@
 - [x] POST /shorten implemented and tested
 - [x] GET /{short_code} implemented and tested
 - [x] Custom ApiError type with ResponseError impl
-- [ ] Integration tests
+- [x] Integration tests — 7 tests passing
 - [ ] Deployment
+- [ ] V2 features
 
 ## Project Structure
 src/
@@ -47,6 +48,13 @@ src/
 └── db/
     ├── mod.rs
     └── urls.rs
+
+tests/
+├── api.rs
+├── helpers.rs
+├── health.rs
+├── shorten.rs
+└── redirect.rs
 
 configuration/
 ├── base.yaml
@@ -69,8 +77,11 @@ configuration/
 - Alias validation: alphanumeric + hyphens only
 - Retry loop: 3 attempts for auto-generated codes
 - Expiry check: if let Some(expires_at) pattern
-- ApiError: typed error with ResponseError impl, status skipped in JSON
+- ApiError: typed error with ResponseError impl
 - Handler return type: Result<HttpResponse, ApiError>
+- Integration tests: real DB per test, UUID-named, migrations run fresh
+- Random port: TcpListener::bind("0.0.0.0:0")
+- Test entry point: tests/api.rs + tests/api/ subfolder
 
 ## Error Handling
 - application code: anyhow::Error + .context()
@@ -79,9 +90,19 @@ configuration/
 - Unique constraint name: urls_short_code_key
 - Handler return type: Result<HttpResponse, ApiError>
 
+## Testing Pattern
+- Tests live in tests/ (flat) with tests/api.rs as entry point
+- spawn_app() creates isolated TestApp per test
+- Each test gets its own database: test_{uuid}
+- Telemetry init guarded by OnceLock
+- reqwest::redirect::Policy::none() for redirect tests
+- Direct DB inserts via app.db_pool for test setup
+- Verify redirect destination via Location header
+
 ## Commands
 - cargo run — start server
 - cargo check — verify compilation
+- cargo test — run all tests
 - sqlx migrate run — run pending migrations
 - cargo sqlx prepare — regenerate .sqlx offline cache
 - curl -X POST http://127.0.0.1:8080/shorten \
