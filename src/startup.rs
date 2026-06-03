@@ -1,8 +1,9 @@
 use std::net::TcpListener;
+use actix_governor::{Governor};
 use actix_web::{App, HttpServer, dev::Server, web};
 use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
-use crate::{configuration::Settings, routes::{health::health, redirect::redirect, shorten::shorten}};
+use crate::{configuration::Settings, middleware::{redirect_governor, shorten_governor}, routes::{health::health, redirect::redirect, shorten::shorten}};
 use anyhow::Context;
 
 pub struct AppState {
@@ -50,14 +51,24 @@ fn run(
     tcp_listener: TcpListener, 
     state: web::Data<AppState>
 ) -> Result<Server, std::io::Error> {
+    let shorten_gov = shorten_governor();
+    let redirect_gov = redirect_governor();
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
-            .service(health)
-            .service(shorten)
-            .service(redirect)
             .app_data(state.clone())
-
+            .service(health)
+            .service(
+                web::scope("/shorten")
+                .wrap(Governor::new(&shorten_gov))
+                .service(shorten)
+            )
+            .service(
+                web::scope("")
+                .wrap(Governor::new(&redirect_gov))
+                .service(redirect)
+            )
     })
     .listen(tcp_listener)?
     .run();

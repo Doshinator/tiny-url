@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, post, web};
 use crate::{db::urls::{insert_url, short_code_exists}, errors::ApiError, models::{CreateUrlRequest, UrlResponse}, startup::AppState, utils::{generate_short_code, validate_url}};
 
-#[post("/shorten")]
+#[post("")]
 pub async fn shorten(
     state: web::Data<AppState>,
     body: web::Json<CreateUrlRequest>
