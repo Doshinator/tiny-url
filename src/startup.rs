@@ -5,9 +5,12 @@ use sqlx::PgPool;
 use tracing_actix_web::TracingLogger;
 use crate::{configuration::Settings, middleware::{redirect_governor, shorten_governor}, routes::{health::health, redirect::redirect, shorten::shorten}};
 use anyhow::Context;
+use deadpool_redis::Pool as RedisPool;
+use deadpool_redis::{Config as RedisConfig, Runtime};
 
 pub struct AppState {
     pub db_pool: PgPool,
+    pub redis: RedisPool,
 }
 
 pub struct Application {
@@ -17,6 +20,13 @@ pub struct Application {
 
 impl Application {
     pub async fn build(config: &Settings) -> Result<Self, anyhow::Error> {
+        // redis
+        let redis_config = RedisConfig::from_url(&config.redis.url);
+        let redis_pool = redis_config
+            .create_pool(Some(Runtime::Tokio1))
+            .context("Failed to create Redis pool")?;
+        
+        // db
         let db_pool = PgPool::connect_lazy_with(
             config.database.connect_option()
         );

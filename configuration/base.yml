@@ -9,3 +9,6 @@ database:
   password: "password"
   database_name: "tiny_url"
   require_ssl: false
+
+redis:
+  url: "redis://127.0.0.1:6379"
