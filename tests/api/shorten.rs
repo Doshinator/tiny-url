@@ -73,3 +73,21 @@ async fn shorten_returns_409_alias_taken() {
 
     assert_eq!(response.status().as_u16(), 409);
 }
+
+#[tokio::test]
+async fn shorten_429_includes_rate_limit_headers() {
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(format!("{}/shorten", app.address))
+        .json(&serde_json::json!({
+            "long_url": "https://www.google.com"
+        }))
+        .send()
+        .await
+        .unwrap();
+
+    assert!(response.headers().contains_key("x-ratelimit-limit"));
+    assert!(response.headers().contains_key("x-ratelimit-remaining"));
+}
