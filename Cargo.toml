@@ -44,6 +44,8 @@ url = "2"
 
 # rate limiter
 actix-governor = "0.5"
+
+# cache
 redis = "1.2.2"
 deadpool-redis = "0.23.0"
 
