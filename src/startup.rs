@@ -41,7 +41,7 @@ impl Application {
             .context("Failed to bind TCP listener")?;
 
         let port = listener.local_addr().unwrap().port();
-        let state = web::Data::new(AppState { db_pool });
+        let state = web::Data::new(AppState { db_pool, redis: redis_pool });
         let server = run(listener, state)
             .context("Failed to start HTTP server")?;
 
