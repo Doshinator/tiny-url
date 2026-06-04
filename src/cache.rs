@@ -1,3 +1,4 @@
+use actix_governor::GovernorResult::Ok;
 use deadpool_redis::Pool as RedisPool;
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
@@ -38,4 +39,45 @@ pub async fn get_cached_url(
             Err(_) => CacheResult::Miss,
         }
     }
+}
+
+pub async fn set_cached_url(
+    pool: &RedisPool,
+    short_code: String,
+    url: &CachedUrl
+) {
+    let conn = match pool.get().await {
+        Ok(c) => c,
+        Err(_) => return ,
+    };
+
+    let key = format!("url:{}", short_code);
+    let value = match serde_json::from_str(url) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+
+    let ttl = match url.expires_at {
+        None => 3600i64,
+        Some(exp) => {
+            let secs = (exp - Utc::now()).num_seconds();
+            if secs <= 0 { return; }
+            secs.min(3600)
+        },
+    };
+
+    let _: Result<(), _> = conn.set_ex(&key, value, ttl as u64).await;
+}
+
+pub async fn set_not_found(
+    pool: &RedisPool,
+    short_code: &str
+) {
+    let mut conn = match pool.get.await {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    let key = format!("url:{}", short_code);
+    let _: Result<(), _> = conn.set_ex(&key, "NOT FOUND", 60).await;
 }

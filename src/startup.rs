@@ -10,7 +10,7 @@ use deadpool_redis::{Config as RedisConfig, Runtime};
 
 pub struct AppState {
     pub db_pool: PgPool,
-    pub redis: RedisPool,
+    pub redis_pool: RedisPool,
 }
 
 pub struct Application {
@@ -41,7 +41,7 @@ impl Application {
             .context("Failed to bind TCP listener")?;
 
         let port = listener.local_addr().unwrap().port();
-        let state = web::Data::new(AppState { db_pool, redis: redis_pool });
+        let state = web::Data::new(AppState { db_pool, redis_pool });
         let server = run(listener, state)
             .context("Failed to start HTTP server")?;
 
