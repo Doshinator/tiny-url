@@ -5,8 +5,8 @@ use chrono::{DateTime, Utc};
 
 #[derive(Deserialize, Serialize)]
 pub struct CachedUrl {
-    long_url: String,
-    expires_at: Option<DateTime<Utc>>
+    pub long_url: String,
+    pub expires_at: Option<DateTime<Utc>>,
 }
 
 pub enum CacheResult {
@@ -42,7 +42,7 @@ pub async fn get_cached_url(
 
 pub async fn set_cached_url(
     pool: &RedisPool,
-    short_code: String,
+    short_code: &str,
     url: &CachedUrl
 ) {
     let mut conn  = match pool.get().await {
